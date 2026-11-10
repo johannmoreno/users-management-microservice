@@ -2,7 +2,7 @@ services:
   mysql:
     image: mysql:8.4
     environment:
-      MYSQL_DATABASE: crud_usuarios
+      MYSQL_DATABASE: vuelos_management
       MYSQL_USER: users_app
       MYSQL_PASSWORD: local_users_password
       MYSQL_ROOT_PASSWORD: local_root_password
@@ -25,12 +25,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: users-management-api:local
+    image: vuelos-management-api:local
     environment:
       PORT: "8080"
       DB_HOST: mysql
       DB_PORT: "3306"
-      DB_NAME: crud_usuarios
+      DB_NAME: vuelos_management
       DB_USERNAME: users_app
       DB_PASSWORD: local_users_password
       DB_SSL_MODE: DISABLED
@@ -39,7 +39,7 @@ services:
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Gestion de Usuarios}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Gestion de Vuelos}
       JWT_SECRET: ${JWT_SECRET:-ZGV2ZWxvcG1lbnQtb25seS1qd3Qtc2VjcmV0LW11c3QtYmUtcmVwbGFjZWQ=}
       JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-900}
     ports:
