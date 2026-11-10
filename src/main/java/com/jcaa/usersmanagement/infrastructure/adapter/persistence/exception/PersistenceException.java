@@ -9,6 +9,12 @@ public final class PersistenceException extends RuntimeException {
   private static final String MESSAGE_ALL = "Failed to retrieve all users.";
   private static final String MESSAGE_DELETE = "Failed to delete user with ID: '%s'.";
   private static final String MESSAGE_CONNECTION = "Could not establish database connection.";
+  private static final String MESSAGE_VUELO_SAVE = "Failed to save flight with ID: '%s'.";
+  private static final String MESSAGE_VUELO_UPDATE = "Failed to update flight with ID: '%s'.";
+  private static final String MESSAGE_VUELO_FIND = "Failed to find flight with ID: '%s'.";
+  private static final String MESSAGE_VUELO_UNIQUE_KEY = "Failed to find flight with number: '%s'.";
+  private static final String MESSAGE_VUELO_ALL = "Failed to retrieve all flights.";
+  private static final String MESSAGE_VUELO_DELETE = "Failed to delete flight with ID: '%s'.";
 
   private PersistenceException(final String message, final Throwable cause) {
     super(message, cause);
@@ -44,5 +50,34 @@ public final class PersistenceException extends RuntimeException {
 
   public static PersistenceException becauseConnectionFailed(final Throwable cause) {
     return new PersistenceException(MESSAGE_CONNECTION, cause);
+  }
+
+  public static PersistenceException becauseVueloSaveFailed(
+      final String vueloId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_VUELO_SAVE, vueloId), cause);
+  }
+
+  public static PersistenceException becauseVueloUpdateFailed(
+      final String vueloId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_VUELO_UPDATE, vueloId), cause);
+  }
+
+  public static PersistenceException becauseVueloFindByIdFailed(
+      final String vueloId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_VUELO_FIND, vueloId), cause);
+  }
+
+  public static PersistenceException becauseVueloFindByUniqueKeyFailed(
+      final String numero, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_VUELO_UNIQUE_KEY, numero), cause);
+  }
+
+  public static PersistenceException becauseVueloFindAllFailed(final Throwable cause) {
+    return new PersistenceException(MESSAGE_VUELO_ALL, cause);
+  }
+
+  public static PersistenceException becauseVueloDeleteFailed(
+      final String vueloId, final Throwable cause) {
+    return new PersistenceException(String.format(MESSAGE_VUELO_DELETE, vueloId), cause);
   }
 }

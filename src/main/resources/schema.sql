@@ -20,6 +20,28 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS vuelos (
+    id                  VARCHAR(36)  NOT NULL PRIMARY KEY,
+    fecha_compra        DATETIME     NOT NULL,
+    fecha_salida        DATETIME     NOT NULL,
+    fecha_llegada       DATETIME     NOT NULL,
+    agencia_viajes      VARCHAR(100) NOT NULL,
+    aerolinea           VARCHAR(100) NOT NULL,
+    numero              VARCHAR(10)  NOT NULL,
+    estado              ENUM('PROGRAMADO', 'CONFIRMADO', 'EN_VUELO', 'ATERRIZADO', 'CANCELADO', 'RETRASADO')
+                        NOT NULL DEFAULT 'PROGRAMADO',
+    valor               DECIMAL(14,2) NOT NULL,
+    cliente             VARCHAR(100) NOT NULL,
+    puesto              VARCHAR(3)   NOT NULL,
+    avion               VARCHAR(50)  NOT NULL,
+    aeropuerto_salida   VARCHAR(100) NOT NULL,
+    aeropuerto_llegada  VARCHAR(100) NOT NULL,
+    piloto              VARCHAR(100) NOT NULL,
+    created_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT uk_vuelos_numero_fecha_salida_puesto UNIQUE (numero, fecha_salida, puesto)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Usuario administrador inicial (password: Admin1234!)
 INSERT INTO users (id, name, email, password, role, status)
 VALUES (
