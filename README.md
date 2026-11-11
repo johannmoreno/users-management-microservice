@@ -16,6 +16,7 @@ Unidad 3.
 | ---------------------- | ---------------------------------------------------------------------- |
 | Repositorio            | <https://github.com/johannmoreno/users-management-microservice>         |
 | Aplicación desplegada  | <https://vuelos-management-api.onrender.com>                            |
+| Interfaz web           | <https://vuelos-management-api.onrender.com/>                           |
 | Health check           | <https://vuelos-management-api.onrender.com/health>                     |
 | Swagger UI             | <https://vuelos-management-api.onrender.com/swagger-ui.html>            |
 | OpenAPI JSON           | <https://vuelos-management-api.onrender.com/v3/api-docs>                |
@@ -39,14 +40,15 @@ Unidad 3.
 8. [Ejecución local](#ejecución-local)
 9. [Pruebas](#pruebas)
 10. [API REST](#api-rest)
-11. [Modelo de dominio: Vuelo](#modelo-de-dominio-vuelo)
-12. [Seguridad y roles](#seguridad-y-roles)
-13. [Documentación OpenAPI](#documentación-openapi)
-14. [Colección Postman](#colección-postman)
-15. [Docker](#docker)
-16. [Integración continua](#integración-continua)
-17. [Despliegue en la nube](#despliegue-en-la-nube)
-18. [Decisiones de diseño](#decisiones-de-diseño)
+11. [Interfaz web](#interfaz-web)
+12. [Modelo de dominio: Vuelo](#modelo-de-dominio-vuelo)
+13. [Seguridad y roles](#seguridad-y-roles)
+14. [Documentación OpenAPI](#documentación-openapi)
+15. [Colección Postman](#colección-postman)
+16. [Docker](#docker)
+17. [Integración continua](#integración-continua)
+18. [Despliegue en la nube](#despliegue-en-la-nube)
+19. [Decisiones de diseño](#decisiones-de-diseño)
 
 ---
 
@@ -333,6 +335,26 @@ Ejemplo de creación:
 | `404`  | Recurso no encontrado                                              |
 | `409`  | Conflicto: ID o clave única `(numero, fecha_salida, puesto)` en uso |
 | `500`  | Error interno                                                      |
+
+---
+
+## Interfaz web
+
+La aplicación incluye una interfaz web mínima servida por el propio Spring Boot en la raíz (`/`), sin
+proyecto frontend separado. Está construida con HTML, CSS y JavaScript nativos en
+`src/main/resources/static/`.
+
+- **Login**: consume `POST /api/auth/login`, guarda el `accessToken` en `sessionStorage` y lo adjunta
+  como `Authorization: Bearer` en cada petición.
+- **Listado**: `GET /api/vuelos` en una tabla ordenada por fecha de salida.
+- **CRUD**: crear, editar y eliminar vuelos desde un formulario modal (solo rol `ADMIN`).
+- **Roles**: el rol se lee del claim `role` del JWT; `REVIEWER` ve el listado en modo lectura.
+- **Sesión**: ante un `401` se limpia el token y se regresa al login.
+
+| Entorno    | URL                                              |
+| ---------- | ------------------------------------------------ |
+| Local      | `http://localhost:8080/`                         |
+| Producción | <https://vuelos-management-api.onrender.com/>    |
 
 ---
 
