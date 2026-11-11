@@ -424,14 +424,27 @@
     if (window.crypto && typeof window.crypto.randomUUID === 'function') {
       return window.crypto.randomUUID();
     }
-    return 'vuelo-' + Date.now();
+    const bytes = new Uint8Array(16);
+    if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+      window.crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < bytes.length; i += 1) {
+        bytes[i] = Math.floor(Math.random() * 256);
+      }
+    }
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    return (
+      hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' +
+      hex.slice(16, 20) + '-' + hex.slice(20)
+    );
   }
 
   function openModal(vuelo) {
     state.editingId = vuelo ? vuelo.id : null;
 
     el('modal-title').textContent = vuelo ? 'Editar vuelo' : 'Nuevo vuelo';
-    el('field-id').classList.toggle('hidden', Boolean(vuelo));
     el('field-estado').classList.toggle('hidden', !vuelo);
     setAlert(el('form-error'), '');
 
@@ -519,7 +532,6 @@
     state.editingUserId = user ? user.id : null;
 
     el('user-modal-title').textContent = user ? 'Editar usuario' : 'Nuevo usuario';
-    el('user-field-id').classList.toggle('hidden', Boolean(user));
     el('user-field-status').classList.toggle('hidden', !user);
     el('u-password-hint').classList.toggle('hidden', !user);
     setAlert(el('user-form-error'), '');
