@@ -346,9 +346,12 @@ proyecto frontend separado. Está construida con HTML, CSS y JavaScript nativos 
 
 - **Login**: consume `POST /api/auth/login`, guarda el `accessToken` en `sessionStorage` y lo adjunta
   como `Authorization: Bearer` en cada petición.
-- **Listado**: `GET /api/vuelos` en una tabla ordenada por fecha de salida.
-- **CRUD**: crear, editar y eliminar vuelos desde un formulario modal (solo rol `ADMIN`).
-- **Roles**: el rol se lee del claim `role` del JWT; `REVIEWER` ve el listado en modo lectura.
+- **Pestaña Vuelos**: `GET /api/vuelos` en una tabla; crear, editar y eliminar desde un formulario
+  modal (solo rol `ADMIN`).
+- **Pestaña Usuarios**: `GET /api/users` en una tabla; crear, editar y eliminar usuarios desde un
+  formulario modal (solo rol `ADMIN`). `REVIEWER` ve el listado en modo lectura y `MEMBER` no ve la
+  pestaña.
+- **Roles**: el rol se lee del claim `role` del JWT.
 - **Sesión**: ante un `401` se limpia el token y se regresa al login.
 
 | Entorno    | URL                                              |
