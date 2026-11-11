@@ -22,6 +22,9 @@ public class SecurityConfig {
   private static final String[] OPEN_API_PATHS = {
     "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**"
   };
+  private static final String[] STATIC_UI_PATHS = {
+    "/", "/index.html", "/css/**", "/js/**", "/favicon.ico"
+  };
 
   @Bean
   public SecurityFilterChain securityFilterChain(
@@ -48,6 +51,8 @@ public class SecurityConfig {
                     .requestMatchers(AUTH_LOGIN_PATH)
                     .permitAll()
                     .requestMatchers(OPEN_API_PATHS)
+                    .permitAll()
+                    .requestMatchers(STATIC_UI_PATHS)
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, USERS_PATH)
                     .permitAll()
