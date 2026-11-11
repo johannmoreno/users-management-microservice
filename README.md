@@ -10,25 +10,43 @@ Unidad 3.
 
 ---
 
+## Enlaces del proyecto
+
+| Recurso                | Enlace                                                                 |
+| ---------------------- | ---------------------------------------------------------------------- |
+| Repositorio            | <https://github.com/johannmoreno/users-management-microservice>         |
+| Aplicación desplegada  | <https://vuelos-management-api.onrender.com>                            |
+| Health check           | <https://vuelos-management-api.onrender.com/health>                     |
+| Swagger UI             | <https://vuelos-management-api.onrender.com/swagger-ui.html>            |
+| OpenAPI JSON           | <https://vuelos-management-api.onrender.com/v3/api-docs>                |
+| Colección Postman      | <https://github.com/johannmoreno/users-management-microservice/tree/main/postman> |
+| Integración continua   | <https://github.com/johannmoreno/users-management-microservice/actions> |
+
+> El servicio corre en el plan gratuito de Render: se suspende tras 15 minutos de inactividad y la
+> primera petición posterior puede tardar ~50 segundos. Abra `/health` antes de la demostración.
+
+---
+
 ## Tabla de contenido
 
-1. [Stack tecnológico](#stack-tecnológico)
-2. [Arquitectura](#arquitectura)
-3. [Estructura del proyecto](#estructura-del-proyecto)
-4. [Requisitos](#requisitos)
-5. [Configuración](#configuración)
-6. [Base de datos](#base-de-datos)
-7. [Ejecución local](#ejecución-local)
-8. [Pruebas](#pruebas)
-9. [API REST](#api-rest)
-10. [Modelo de dominio: Vuelo](#modelo-de-dominio-vuelo)
-11. [Seguridad y roles](#seguridad-y-roles)
-12. [Documentación OpenAPI](#documentación-openapi)
-13. [Colección Postman](#colección-postman)
-14. [Docker](#docker)
-15. [Integración continua](#integración-continua)
-16. [Despliegue en la nube](#despliegue-en-la-nube)
-17. [Decisiones de diseño](#decisiones-de-diseño)
+1. [Enlaces del proyecto](#enlaces-del-proyecto)
+2. [Stack tecnológico](#stack-tecnológico)
+3. [Arquitectura](#arquitectura)
+4. [Estructura del proyecto](#estructura-del-proyecto)
+5. [Requisitos](#requisitos)
+6. [Configuración](#configuración)
+7. [Base de datos](#base-de-datos)
+8. [Ejecución local](#ejecución-local)
+9. [Pruebas](#pruebas)
+10. [API REST](#api-rest)
+11. [Modelo de dominio: Vuelo](#modelo-de-dominio-vuelo)
+12. [Seguridad y roles](#seguridad-y-roles)
+13. [Documentación OpenAPI](#documentación-openapi)
+14. [Colección Postman](#colección-postman)
+15. [Docker](#docker)
+16. [Integración continua](#integración-continua)
+17. [Despliegue en la nube](#despliegue-en-la-nube)
+18. [Decisiones de diseño](#decisiones-de-diseño)
 
 ---
 
@@ -240,6 +258,7 @@ java -jar target/users-management-2.2.0.jar
 ## API REST
 
 Base URL local: `http://localhost:8080`
+Base URL producción: `https://vuelos-management-api.onrender.com`
 
 ### Salud
 
@@ -367,8 +386,10 @@ Matriz de permisos:
 
 Con la aplicación en ejecución:
 
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+| Entorno     | Swagger UI                                          | OpenAPI JSON                                   |
+| ----------- | --------------------------------------------------- | ---------------------------------------------- |
+| Local       | `http://localhost:8080/swagger-ui.html`             | `http://localhost:8080/v3/api-docs`            |
+| Producción  | <https://vuelos-management-api.onrender.com/swagger-ui.html> | <https://vuelos-management-api.onrender.com/v3/api-docs> |
 
 El contrato de cada controlador está separado en interfaces `*RestControllerDocs` para mantener los
 controladores enfocados en el despacho HTTP.
@@ -438,31 +459,74 @@ pull request hacia `main`:
 
 ## Despliegue en la nube
 
-### Base de datos
+Despliegue realizado con **TiDB Cloud Starter** como base de datos (compatible con MySQL) y
+**Render** como plataforma de ejecución del contenedor.
 
-1. Crear una instancia MySQL 8 accesible desde Internet o desde la red privada de Render
-   (por ejemplo, Aiven, PlanetScale, Railway o un servicio MySQL gestionado).
-2. Ejecutar `src/main/resources/schema.sql` una vez para crear las tablas y el usuario administrador.
-3. Registrar `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME` y `DB_PASSWORD`.
-4. Usar `DB_SSL_MODE=REQUIRED` si el proveedor exige SSL.
+| Componente | Servicio | Detalle |
+| ---------- | -------- | ------- |
+| Base de datos | TiDB Cloud Starter | Región `us-west-2`, puerto `4000`, TLS obligatorio |
+| Aplicación | Render (Docker, plan Free) | Servicio `vuelos-management-api`, rama `main` |
+| URL pública | <https://vuelos-management-api.onrender.com> | Health check en `/health` |
 
-### Aplicación
+### Base de datos (TiDB Cloud)
 
-El archivo `render.yaml` define un Blueprint de Render con:
+1. Crear un clúster **Starter** en <https://tidbcloud.com> en la región más cercana a Render
+   (`us-west-2` para la región por defecto de Render).
+2. En **Settings → Networking**, verificar que el *Public Endpoint* esté habilitado y que la regla de
+   red permita las IP de salida de Render (`0.0.0.0/0` en el plan gratuito, ya que Render no expone
+   IP fijas).
+3. En **Connect**, generar la contraseña y copiar `HOST`, `PORT` (`4000`) y `USERNAME`
+   (con formato `<cluster-id>.root`).
+4. Aplicar el esquema con un cliente MySQL 8:
+
+   ```powershell
+   Get-Content .\src\main\resources\schema.sql -Raw |
+     & "C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe" `
+       --host=<HOST> --port=4000 --user="<USERNAME>" --password --ssl-mode=REQUIRED
+   ```
+
+5. Verificar las tablas:
+
+   ```sql
+   USE vuelos_management;
+   SHOW TABLES;
+   SELECT id, email, role, status FROM users;
+   ```
+
+> TiDB es compatible con MySQL, pero usa el puerto `4000` y exige TLS: `DB_SSL_MODE=REQUIRED`.
+> La aplicación no ejecuta `schema.sql` automáticamente, por lo que este paso es obligatorio.
+
+### Aplicación (Render)
+
+El archivo `render.yaml` define un Blueprint con:
 
 - Runtime Docker y despliegue automático desde `main`.
 - Health check en `/health`.
+- `DB_NAME=vuelos_management` y `DB_SSL_MODE=REQUIRED` ya definidos.
 - Variables sensibles marcadas como `sync: false` para completarlas en el panel.
 - `JWT_SECRET` generado automáticamente.
 
 Pasos:
 
-1. Crear un Blueprint en Render y seleccionar este repositorio.
-2. Completar los secretos requeridos: `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`,
-   `SMTP_USERNAME`, `SMTP_PASSWORD` y `SMTP_FROM_ADDRESS`.
-3. Desplegar. La API quedará disponible en el subdominio `onrender.com` asignado y Swagger UI en
-   `/swagger-ui.html`.
-4. Verificar `GET /health` y ejecutar la colección Postman apuntando `baseUrl` al dominio público.
+1. En Render, **New + → Blueprint** y seleccionar este repositorio.
+2. Completar los secretos: `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`,
+   `SMTP_USERNAME`, `SMTP_PASSWORD` y `SMTP_FROM_ADDRESS` (el correo es opcional; si se deja vacío
+   solo se omite el envío de notificaciones).
+3. Aplicar el Blueprint. Render compila la imagen Docker y arranca la aplicación en el puerto
+   asignado.
+4. Verificar el despliegue:
+
+   ```bash
+   curl https://vuelos-management-api.onrender.com/health
+   # {"status":"UP","name":"users-management","version":"2.2.0"}
+   ```
+
+5. Abrir <https://vuelos-management-api.onrender.com/swagger-ui.html>, autenticarse con el usuario
+   administrador y ejecutar el CRUDL de vuelos. También se puede importar la colección Postman y
+   cambiar `baseUrl` por la URL pública.
+
+> El plan gratuito de Render suspende el servicio tras 15 minutos sin tráfico; la primera petición
+> posterior puede tardar alrededor de 50 segundos.
 
 ---
 
