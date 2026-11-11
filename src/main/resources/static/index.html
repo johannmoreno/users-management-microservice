@@ -53,49 +53,92 @@
     </header>
 
     <main class="container">
-      <div class="toolbar">
-        <div>
-          <h2>Vuelos</h2>
-          <p id="role-note" class="muted small"></p>
-        </div>
-        <div class="toolbar-actions">
-          <button id="refresh-btn" class="btn btn-ghost" type="button">Actualizar</button>
-          <button id="new-btn" class="btn btn-primary admin-only" type="button">+ Nuevo vuelo</button>
-        </div>
+      <div class="tabs" role="tablist" aria-label="Secciones">
+        <button id="tab-vuelos" class="tab is-active" type="button" role="tab" aria-selected="true">Vuelos</button>
+        <button id="tab-usuarios" class="tab users-only" type="button" role="tab" aria-selected="false">Usuarios</button>
       </div>
 
       <p id="app-alert" class="alert hidden" role="status"></p>
 
-      <div class="table-wrap">
-        <table id="vuelos-table">
-          <colgroup>
-            <col style="width:8%">
-            <col style="width:10%">
-            <col style="width:13%">
-            <col style="width:19%">
-            <col style="width:12%">
-            <col style="width:6%">
-            <col style="width:11%">
-            <col style="width:12%">
-            <col style="width:9%">
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Número</th>
-              <th>Aerolínea</th>
-              <th>Salida / llegada</th>
-              <th>Ruta</th>
-              <th>Cliente</th>
-              <th>Puesto</th>
-              <th class="right">Valor</th>
-              <th>Estado</th>
-              <th class="right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="vuelos-body"></tbody>
-        </table>
-        <p id="empty-state" class="empty hidden">No hay vuelos registrados todavía.</p>
-      </div>
+      <section id="panel-vuelos">
+        <div class="toolbar">
+          <div>
+            <h2>Vuelos</h2>
+            <p id="role-note" class="muted small"></p>
+          </div>
+          <div class="toolbar-actions">
+            <button id="refresh-btn" class="btn btn-ghost" type="button">Actualizar</button>
+            <button id="new-btn" class="btn btn-primary admin-only" type="button">+ Nuevo vuelo</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="vuelos-table">
+            <colgroup>
+              <col style="width:8%">
+              <col style="width:10%">
+              <col style="width:13%">
+              <col style="width:19%">
+              <col style="width:12%">
+              <col style="width:6%">
+              <col style="width:11%">
+              <col style="width:12%">
+              <col style="width:9%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Número</th>
+                <th>Aerolínea</th>
+                <th>Salida / llegada</th>
+                <th>Ruta</th>
+                <th>Cliente</th>
+                <th>Puesto</th>
+                <th class="right">Valor</th>
+                <th>Estado</th>
+                <th class="right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="vuelos-body"></tbody>
+          </table>
+          <p id="empty-state" class="empty hidden">No hay vuelos registrados todavía.</p>
+        </div>
+      </section>
+
+      <section id="panel-usuarios" class="hidden">
+        <div class="toolbar">
+          <div>
+            <h2>Usuarios</h2>
+            <p id="users-note" class="muted small"></p>
+          </div>
+          <div class="toolbar-actions">
+            <button id="users-refresh-btn" class="btn btn-ghost" type="button">Actualizar</button>
+            <button id="new-user-btn" class="btn btn-primary admin-only" type="button">+ Nuevo usuario</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table id="users-table">
+            <colgroup>
+              <col style="width:26%">
+              <col style="width:30%">
+              <col style="width:14%">
+              <col style="width:16%">
+              <col style="width:14%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th class="right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="users-body"></tbody>
+          </table>
+          <p id="users-empty" class="empty hidden">No hay usuarios registrados.</p>
+        </div>
+      </section>
     </main>
   </section>
 
@@ -197,6 +240,65 @@
         <div class="modal-foot">
           <button id="cancel-btn" class="btn btn-ghost" type="button">Cancelar</button>
           <button id="save-btn" class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL USUARIO ================= -->
+  <div id="user-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="user-modal-title">
+    <div class="modal-box modal-box-sm">
+      <div class="modal-head">
+        <h3 id="user-modal-title">Nuevo usuario</h3>
+        <button id="user-modal-close" class="icon-btn" type="button" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form id="user-form" class="grid">
+        <div class="field" id="user-field-id">
+          <label for="u-id">ID</label>
+          <input id="u-id" required maxlength="36">
+        </div>
+
+        <div class="field">
+          <label for="u-name">Nombre</label>
+          <input id="u-name" required minlength="3" maxlength="100" placeholder="María Gómez">
+        </div>
+
+        <div class="field">
+          <label for="u-email">Correo electrónico</label>
+          <input id="u-email" type="email" required placeholder="maria@example.com" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label for="u-password">Contraseña</label>
+          <input id="u-password" type="password" minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+          <span id="u-password-hint" class="muted small hidden">Déjala en blanco para conservar la actual.</span>
+        </div>
+
+        <div class="field">
+          <label for="u-role">Rol</label>
+          <select id="u-role">
+            <option value="MEMBER">MEMBER</option>
+            <option value="REVIEWER">REVIEWER</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
+
+        <div class="field" id="user-field-status">
+          <label for="u-status">Estado</label>
+          <select id="u-status">
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="INACTIVE">INACTIVE</option>
+            <option value="PENDING">PENDING</option>
+            <option value="BLOCKED">BLOCKED</option>
+          </select>
+        </div>
+
+        <p id="user-form-error" class="alert alert-error hidden" role="alert"></p>
+
+        <div class="modal-foot">
+          <button id="user-cancel-btn" class="btn btn-ghost" type="button">Cancelar</button>
+          <button id="user-save-btn" class="btn btn-primary" type="submit">Guardar</button>
         </div>
       </form>
     </div>

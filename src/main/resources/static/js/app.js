@@ -9,8 +9,11 @@
     token: sessionStorage.getItem(TOKEN_KEY) || '',
     email: sessionStorage.getItem(EMAIL_KEY) || '',
     role: '',
+    view: 'vuelos',
     editingId: null,
-    vuelos: []
+    editingUserId: null,
+    vuelos: [],
+    users: []
   };
 
   const el = (id) => document.getElementById(id);
@@ -142,13 +145,42 @@
     state.role = '';
     state.email = '';
     state.vuelos = [];
+    state.users = [];
+    state.editingId = null;
+    state.editingUserId = null;
     sessionStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(EMAIL_KEY);
     el('vuelos-body').innerHTML = '';
+    el('users-body').innerHTML = '';
     el('modal').classList.add('hidden');
+    el('user-modal').classList.add('hidden');
+    state.view = 'vuelos';
+    el('tab-vuelos').classList.add('is-active');
+    el('tab-usuarios').classList.remove('is-active');
+    el('panel-vuelos').classList.remove('hidden');
+    el('panel-usuarios').classList.add('hidden');
     showView('login');
     if (expired) {
       setAlert(el('login-error'), 'La sesión expiró. Inicia sesión nuevamente.', 'error');
+    }
+  }
+
+  function switchView(view) {
+    state.view = view;
+    const isVuelos = view === 'vuelos';
+
+    el('tab-vuelos').classList.toggle('is-active', isVuelos);
+    el('tab-usuarios').classList.toggle('is-active', !isVuelos);
+    el('tab-vuelos').setAttribute('aria-selected', String(isVuelos));
+    el('tab-usuarios').setAttribute('aria-selected', String(!isVuelos));
+    el('panel-vuelos').classList.toggle('hidden', !isVuelos);
+    el('panel-usuarios').classList.toggle('hidden', isVuelos);
+    setAlert(el('app-alert'), '');
+
+    if (isVuelos) {
+      loadVuelos();
+    } else {
+      loadUsers();
     }
   }
 
@@ -157,16 +189,25 @@
     state.role = claims.role || 'MEMBER';
 
     const isAdmin = state.role === 'ADMIN';
+    const canReadUsers = isAdmin || state.role === 'REVIEWER';
+
     el('user-chip').textContent = (state.email || claims.sub || '') + ' · ' + state.role;
     document.querySelectorAll('.admin-only').forEach((node) => {
       node.classList.toggle('hidden', !isAdmin);
     });
+    document.querySelectorAll('.users-only').forEach((node) => {
+      node.classList.toggle('hidden', !canReadUsers);
+    });
+
     el('role-note').textContent = isAdmin
       ? 'Puedes crear, editar y eliminar vuelos.'
       : 'Tu rol es de solo lectura: puedes consultar el listado.';
+    el('users-note').textContent = isAdmin
+      ? 'Puedes crear, editar y eliminar usuarios.'
+      : 'Tu rol es de solo lectura: puedes consultar el listado de usuarios.';
 
     showView('app');
-    loadVuelos();
+    switchView('vuelos');
   }
 
   /* ------------------------------- vuelos ------------------------------- */
@@ -282,6 +323,101 @@
     }
   }
 
+  /* ------------------------------- usuarios ------------------------------ */
+
+  async function loadUsers() {
+    try {
+      const data = await api('/api/users');
+      state.users = Array.isArray(data) ? data : [];
+      renderUsers();
+    } catch (error) {
+      if (state.token) notify(error.message, 'error');
+    }
+  }
+
+  function badgeCell(value) {
+    const td = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = 'badge badge-' + value;
+    badge.textContent = String(value).replace('_', ' ');
+    td.appendChild(badge);
+    return td;
+  }
+
+  function renderUsers() {
+    const body = el('users-body');
+    const table = el('users-table');
+    body.innerHTML = '';
+
+    const isEmpty = state.users.length === 0;
+    table.classList.toggle('hidden', isEmpty);
+    el('users-empty').classList.toggle('hidden', !isEmpty);
+
+    const isAdmin = state.role === 'ADMIN';
+
+    state.users.forEach((user) => {
+      const row = document.createElement('tr');
+
+      row.appendChild(cell(user.name, 'cell-main'));
+      row.appendChild(cell(user.email));
+      row.appendChild(badgeCell(user.role));
+      row.appendChild(badgeCell(user.status));
+
+      const actions = document.createElement('td');
+      actions.className = 'right';
+
+      if (isAdmin) {
+        const wrap = document.createElement('div');
+        wrap.className = 'row-actions';
+
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.className = 'link-btn';
+        edit.textContent = '✏️';
+        edit.title = 'Editar';
+        edit.setAttribute('aria-label', 'Editar');
+        edit.addEventListener('click', () => openUserModal(user));
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'link-btn danger';
+        remove.textContent = '🗑️';
+        remove.title = 'Eliminar';
+        remove.setAttribute('aria-label', 'Eliminar');
+        remove.addEventListener('click', () => removeUser(user));
+
+        wrap.appendChild(edit);
+        wrap.appendChild(remove);
+        actions.appendChild(wrap);
+      } else {
+        actions.textContent = '—';
+      }
+
+      row.appendChild(actions);
+      body.appendChild(row);
+    });
+  }
+
+  async function removeUser(user) {
+    if (user.email.toLowerCase() === String(state.email).toLowerCase()) {
+      notify('No puedes eliminar tu propio usuario desde la interfaz.', 'error');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      '¿Eliminar el usuario ' + user.name + ' (' + user.email + ')?'
+    );
+    if (!confirmed) return;
+
+    try {
+      await api('/api/users/' + encodeURIComponent(user.id), { method: 'DELETE' });
+      notify('Usuario eliminado correctamente.', 'ok');
+      await loadUsers();
+    } catch (error) {
+      notify(error.message, 'error');
+    }
+  }
+
   /* -------------------------------- modal -------------------------------- */
 
   function newId() {
@@ -377,6 +513,83 @@
     }
   }
 
+  /* ---------------------------- modal usuario ---------------------------- */
+
+  function openUserModal(user) {
+    state.editingUserId = user ? user.id : null;
+
+    el('user-modal-title').textContent = user ? 'Editar usuario' : 'Nuevo usuario';
+    el('user-field-id').classList.toggle('hidden', Boolean(user));
+    el('user-field-status').classList.toggle('hidden', !user);
+    el('u-password-hint').classList.toggle('hidden', !user);
+    setAlert(el('user-form-error'), '');
+
+    el('u-id').value = user ? user.id : newId();
+    el('u-name').value = user ? user.name : '';
+    el('u-email').value = user ? user.email : '';
+    el('u-password').value = '';
+    el('u-password').required = !user;
+    el('u-role').value = user ? user.role : 'MEMBER';
+    el('u-status').value = user ? user.status : 'ACTIVE';
+
+    el('user-modal').classList.remove('hidden');
+    el('u-name').focus();
+  }
+
+  function closeUserModal() {
+    el('user-modal').classList.add('hidden');
+    state.editingUserId = null;
+  }
+
+  async function saveUser(event) {
+    event.preventDefault();
+
+    const editing = Boolean(state.editingUserId);
+    const password = el('u-password').value;
+
+    const payload = {
+      name: el('u-name').value.trim(),
+      email: el('u-email').value.trim(),
+      role: el('u-role').value
+    };
+
+    if (editing) {
+      payload.status = el('u-status').value;
+      if (password) {
+        payload.password = password;
+      }
+    } else {
+      payload.id = el('u-id').value.trim();
+      payload.password = password;
+    }
+
+    const button = el('user-save-btn');
+    button.disabled = true;
+    setAlert(el('user-form-error'), '');
+
+    try {
+      if (editing) {
+        await api('/api/users/' + encodeURIComponent(state.editingUserId), {
+          method: 'PUT',
+          body: JSON.stringify(payload)
+        });
+      } else {
+        await api('/api/users', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+      }
+
+      closeUserModal();
+      notify(editing ? 'Usuario actualizado correctamente.' : 'Usuario creado correctamente.', 'ok');
+      await loadUsers();
+    } catch (error) {
+      setAlert(el('user-form-error'), error.message, 'error');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   /* -------------------------------- inicio -------------------------------- */
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -398,20 +611,34 @@
     });
 
     el('logout-btn').addEventListener('click', () => signOut(false));
+
+    el('tab-vuelos').addEventListener('click', () => switchView('vuelos'));
+    el('tab-usuarios').addEventListener('click', () => switchView('usuarios'));
+
     el('refresh-btn').addEventListener('click', () => loadVuelos());
     el('new-btn').addEventListener('click', () => openModal(null));
     el('modal-close').addEventListener('click', closeModal);
     el('cancel-btn').addEventListener('click', closeModal);
     el('vuelo-form').addEventListener('submit', saveVuelo);
 
+    el('users-refresh-btn').addEventListener('click', () => loadUsers());
+    el('new-user-btn').addEventListener('click', () => openUserModal(null));
+    el('user-modal-close').addEventListener('click', closeUserModal);
+    el('user-cancel-btn').addEventListener('click', closeUserModal);
+    el('user-form').addEventListener('submit', saveUser);
+
     el('modal').addEventListener('click', (event) => {
       if (event.target === el('modal')) closeModal();
     });
 
+    el('user-modal').addEventListener('click', (event) => {
+      if (event.target === el('user-modal')) closeUserModal();
+    });
+
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !el('modal').classList.contains('hidden')) {
-        closeModal();
-      }
+      if (event.key !== 'Escape') return;
+      if (!el('modal').classList.contains('hidden')) closeModal();
+      if (!el('user-modal').classList.contains('hidden')) closeUserModal();
     });
 
     if (state.token) {
